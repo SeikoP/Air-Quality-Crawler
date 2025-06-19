@@ -10,7 +10,6 @@ Hệ thống này thực hiện thu thập dữ liệu chất lượng không kh
 ├── data_crawler.py       # Thu thập dữ liệu từ nhiều API/web
 ├── clean_data.py         # Làm sạch, chuẩn hóa, lưu vào DB, Google Drive
 ├── api.py                # Cung cấp các API FastAPI để truy xuất dữ liệu
-├── templates/            # Template Jinja2 cho dashboard HTML
 ├── .env                  # Biến môi trường như DATABASE_URL, API_KEY,...
 ├── requirements.txt      # Danh sách thư viện cần cài đặt
 └── README.md             # Tài liệu này
