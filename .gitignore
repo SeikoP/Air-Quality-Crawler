@@ -1,0 +1,31 @@
+data/
+ssis/Integration Services Project dp-15/.vs/
+ssis/Integration Services Project dp-15/*.suo
+ssis/Integration Services Project dp-15/bin/
+ssis/Integration Services Project dp-15/obj/
+*.env
+*.log
+*.sqlite3
+*.db
+*.pkl
+*.pyc
+__pycache__/
+data/
+data_crawler/data/
+data_cleaner/data/
+data_cleaner/credentials_oauth.json
+clean/
+ssis/
+*.suo
+*.sln
+*.vscode/
+*.idea/
+# Ignore Jupyter and notebook checkpoints
+.ipynb_checkpoints/
+# Ignore Docker volumes (if any)
+volumes/
+# Ignore secrets
+*token_drive.pkl
+# Ignore OS files
+.DS_Store
+Thumbs.db

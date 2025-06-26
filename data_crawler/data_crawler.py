@@ -14,6 +14,35 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import sys
 import schedule
 from pathlib import Path
+from fastapi import FastAPI, Request
+
+app = FastAPI()
+
+@app.post("/run_optimized_crawl")
+async def run_crawl(request: Request):
+    """
+    Cho phép truyền API key động qua body JSON (ưu tiên), hoặc lấy từ biến môi trường.
+    """
+    body = await request.json()
+    iqair_api_key = body.get("iqair_api_key") if isinstance(body, dict) else None
+    openweather_api_key = body.get("openweather_api_key") if isinstance(body, dict) else None
+    waqi_token = body.get("waqi_token") if isinstance(body, dict) else None
+
+    # Nếu không truyền qua body thì lấy từ biến môi trường
+    if not iqair_api_key:
+        iqair_api_key = os.getenv('IQAIR_API_KEY')
+    if not openweather_api_key:
+        openweather_api_key = os.getenv('OPENWEATHER_API_KEY')
+    if not waqi_token:
+        waqi_token = os.getenv('WAQI_TOKEN', 'demo')
+
+    crawler = AirQualityCrawler()
+    return crawler.run_optimized_crawl(
+        iqair_api_key,
+        openweather_api_key,
+        waqi_token
+    )
+
 
 # Cấu hình logging với encoding UTF-8
 logging.basicConfig(
@@ -70,61 +99,61 @@ class AirQualityCrawler:
             {'name': 'Can Tho', 'alt_names': ['Cần Thơ', 'Cantho'], 'province': 'Can Tho', 'lat': 10.0452, 'lon': 105.7469},
             {'name': 'Hai Phong', 'alt_names': ['Hải Phòng', 'Haiphong'], 'province': 'Hai Phong', 'lat': 20.8449, 'lon': 106.6881},
             
-            # Thành phố lớn khác
-            {'name': 'Bien Hoa', 'alt_names': ['Biên Hòa'], 'province': 'Dong Nai', 'lat': 10.9460, 'lon': 106.8234},
-            {'name': 'Hue', 'alt_names': ['Huế', 'Hue City'], 'province': 'Thua Thien Hue', 'lat': 16.4637, 'lon': 107.5909},
-            {'name': 'Nha Trang', 'alt_names': ['Nhatrang'], 'province': 'Khanh Hoa', 'lat': 12.2388, 'lon': 109.1967},
-            {'name': 'Buon Ma Thuot', 'alt_names': ['Buôn Ma Thuột', 'Dak Lak'], 'province': 'Dak Lak', 'lat': 12.6667, 'lon': 108.0500},
-            {'name': 'Quy Nhon', 'alt_names': ['Qui Nhon', 'Quy-Nhon'], 'province': 'Binh Dinh', 'lat': 13.7563, 'lon': 109.2297},
+            # # Thành phố lớn khác
+            # {'name': 'Bien Hoa', 'alt_names': ['Biên Hòa'], 'province': 'Dong Nai', 'lat': 10.9460, 'lon': 106.8234},
+            # {'name': 'Hue', 'alt_names': ['Huế', 'Hue City'], 'province': 'Thua Thien Hue', 'lat': 16.4637, 'lon': 107.5909},
+            # {'name': 'Nha Trang', 'alt_names': ['Nhatrang'], 'province': 'Khanh Hoa', 'lat': 12.2388, 'lon': 109.1967},
+            # {'name': 'Buon Ma Thuot', 'alt_names': ['Buôn Ma Thuột', 'Dak Lak'], 'province': 'Dak Lak', 'lat': 12.6667, 'lon': 108.0500},
+            # {'name': 'Quy Nhon', 'alt_names': ['Qui Nhon', 'Quy-Nhon'], 'province': 'Binh Dinh', 'lat': 13.7563, 'lon': 109.2297},
             
-            # Thêm các thành phố khác
-            {'name': 'Vung Tau', 'alt_names': ['Vũng Tàu', 'Vungtau'], 'province': 'Ba Ria Vung Tau', 'lat': 10.4113, 'lon': 107.1364},
-            {'name': 'Thu Dau Mot', 'alt_names': ['Thủ Dầu Một', 'Thu-Dau-Mot'], 'province': 'Binh Duong', 'lat': 10.9804, 'lon': 106.6519},
-            {'name': 'Long Xuyen', 'alt_names': ['Long Xuyên'], 'province': 'An Giang', 'lat': 10.3861, 'lon': 105.4348},
-            {'name': 'My Tho', 'alt_names': ['Mỹ Tho', 'MyTho'], 'province': 'Tien Giang', 'lat': 10.3600, 'lon': 106.3597},
-            {'name': 'Vinh', 'alt_names': ['Vinh City'], 'province': 'Nghe An', 'lat': 18.6699, 'lon': 105.6816},
-            {'name': 'Rach Gia', 'alt_names': ['Rạch Giá', 'Rachgia'], 'province': 'Kien Giang', 'lat': 10.0128, 'lon': 105.0800},
-            {'name': 'Pleiku', 'alt_names': ['Pleiku City'], 'province': 'Gia Lai', 'lat': 13.9833, 'lon': 108.0000},
-            {'name': 'Dalat', 'alt_names': ['Đà Lạt', 'Da Lat'], 'province': 'Lam Dong', 'lat': 11.9404, 'lon': 108.4583},
-            {'name': 'Phan Thiet', 'alt_names': ['Phan Thiết'], 'province': 'Binh Thuan', 'lat': 10.9289, 'lon': 108.1022},
-            {'name': 'Thai Nguyen', 'alt_names': ['Thái Nguyên'], 'province': 'Thai Nguyen', 'lat': 21.5944, 'lon': 105.8487},
+            # # Thêm các thành phố khác
+            # {'name': 'Vung Tau', 'alt_names': ['Vũng Tàu', 'Vungtau'], 'province': 'Ba Ria Vung Tau', 'lat': 10.4113, 'lon': 107.1364},
+            # {'name': 'Thu Dau Mot', 'alt_names': ['Thủ Dầu Một', 'Thu-Dau-Mot'], 'province': 'Binh Duong', 'lat': 10.9804, 'lon': 106.6519},
+            # {'name': 'Long Xuyen', 'alt_names': ['Long Xuyên'], 'province': 'An Giang', 'lat': 10.3861, 'lon': 105.4348},
+            # {'name': 'My Tho', 'alt_names': ['Mỹ Tho', 'MyTho'], 'province': 'Tien Giang', 'lat': 10.3600, 'lon': 106.3597},
+            # {'name': 'Vinh', 'alt_names': ['Vinh City'], 'province': 'Nghe An', 'lat': 18.6699, 'lon': 105.6816},
+            # {'name': 'Rach Gia', 'alt_names': ['Rạch Giá', 'Rachgia'], 'province': 'Kien Giang', 'lat': 10.0128, 'lon': 105.0800},
+            # {'name': 'Pleiku', 'alt_names': ['Pleiku City'], 'province': 'Gia Lai', 'lat': 13.9833, 'lon': 108.0000},
+            # {'name': 'Dalat', 'alt_names': ['Đà Lạt', 'Da Lat'], 'province': 'Lam Dong', 'lat': 11.9404, 'lon': 108.4583},
+            # {'name': 'Phan Thiet', 'alt_names': ['Phan Thiết'], 'province': 'Binh Thuan', 'lat': 10.9289, 'lon': 108.1022},
+            # {'name': 'Thai Nguyen', 'alt_names': ['Thái Nguyên'], 'province': 'Thai Nguyen', 'lat': 21.5944, 'lon': 105.8487},
             
-            # Thêm các tỉnh miền Bắc
-            {'name': 'Nam Dinh', 'alt_names': ['Nam Định'], 'province': 'Nam Dinh', 'lat': 20.4389, 'lon': 106.1621},
-            {'name': 'Ninh Binh', 'alt_names': ['Ninh Bình'], 'province': 'Ninh Binh', 'lat': 20.2506, 'lon': 105.9756},
-            {'name': 'Ha Long', 'alt_names': ['Hạ Long', 'Halong'], 'province': 'Quang Ninh', 'lat': 20.9500, 'lon': 107.0833},
-            {'name': 'Bac Ninh', 'alt_names': ['Bắc Ninh'], 'province': 'Bac Ninh', 'lat': 21.1861, 'lon': 106.0763},
-            {'name': 'Hai Duong', 'alt_names': ['Hải Dương'], 'province': 'Hai Duong', 'lat': 20.9373, 'lon': 106.3145},
-            {'name': 'Hung Yen', 'alt_names': ['Hưng Yên'], 'province': 'Hung Yen', 'lat': 20.6464, 'lon': 106.0511},
-            {'name': 'Uong Bi', 'alt_names': ['Uông Bí'], 'province': 'Quang Ninh', 'lat': 21.0358, 'lon': 106.7733},
-            {'name': 'Viet Tri', 'alt_names': ['Việt Trì'], 'province': 'Phu Tho', 'lat': 21.3227, 'lon': 105.4024},
+            # # Thêm các tỉnh miền Bắc
+            # {'name': 'Nam Dinh', 'alt_names': ['Nam Định'], 'province': 'Nam Dinh', 'lat': 20.4389, 'lon': 106.1621},
+            # {'name': 'Ninh Binh', 'alt_names': ['Ninh Bình'], 'province': 'Ninh Binh', 'lat': 20.2506, 'lon': 105.9756},
+            # {'name': 'Ha Long', 'alt_names': ['Hạ Long', 'Halong'], 'province': 'Quang Ninh', 'lat': 20.9500, 'lon': 107.0833},
+            # {'name': 'Bac Ninh', 'alt_names': ['Bắc Ninh'], 'province': 'Bac Ninh', 'lat': 21.1861, 'lon': 106.0763},
+            # {'name': 'Hai Duong', 'alt_names': ['Hải Dương'], 'province': 'Hai Duong', 'lat': 20.9373, 'lon': 106.3145},
+            # {'name': 'Hung Yen', 'alt_names': ['Hưng Yên'], 'province': 'Hung Yen', 'lat': 20.6464, 'lon': 106.0511},
+            # {'name': 'Uong Bi', 'alt_names': ['Uông Bí'], 'province': 'Quang Ninh', 'lat': 21.0358, 'lon': 106.7733},
+            # {'name': 'Viet Tri', 'alt_names': ['Việt Trì'], 'province': 'Phu Tho', 'lat': 21.3227, 'lon': 105.4024},
             
-            # Thêm các tỉnh miền Trung
-            {'name': 'Thanh Hoa', 'alt_names': ['Thanh Hóa'], 'province': 'Thanh Hoa', 'lat': 19.8067, 'lon': 105.7851},
-            {'name': 'Dong Hoi', 'alt_names': ['Đông Hới'], 'province': 'Quang Binh', 'lat': 17.4833, 'lon': 106.6000},
-            {'name': 'Dong Ha', 'alt_names': ['Đông Hà'], 'province': 'Quang Tri', 'lat': 16.8167, 'lon': 107.1000},
-            {'name': 'Hoi An', 'alt_names': ['Hội An'], 'province': 'Quang Nam', 'lat': 15.8801, 'lon': 108.3380},
-            {'name': 'Tam Ky', 'alt_names': ['Tam Kỳ'], 'province': 'Quang Nam', 'lat': 15.5736, 'lon': 108.4736},
-            {'name': 'Quang Ngai', 'alt_names': ['Quảng Ngãi'], 'province': 'Quang Ngai', 'lat': 15.1194, 'lon': 108.7922},
-            {'name': 'Tuy Hoa', 'alt_names': ['Tuy Hòa'], 'province': 'Phu Yen', 'lat': 13.0833, 'lon': 109.3000},
+            # # Thêm các tỉnh miền Trung
+            # {'name': 'Thanh Hoa', 'alt_names': ['Thanh Hóa'], 'province': 'Thanh Hoa', 'lat': 19.8067, 'lon': 105.7851},
+            # {'name': 'Dong Hoi', 'alt_names': ['Đông Hới'], 'province': 'Quang Binh', 'lat': 17.4833, 'lon': 106.6000},
+            # {'name': 'Dong Ha', 'alt_names': ['Đông Hà'], 'province': 'Quang Tri', 'lat': 16.8167, 'lon': 107.1000},
+            # {'name': 'Hoi An', 'alt_names': ['Hội An'], 'province': 'Quang Nam', 'lat': 15.8801, 'lon': 108.3380},
+            # {'name': 'Tam Ky', 'alt_names': ['Tam Kỳ'], 'province': 'Quang Nam', 'lat': 15.5736, 'lon': 108.4736},
+            # {'name': 'Quang Ngai', 'alt_names': ['Quảng Ngãi'], 'province': 'Quang Ngai', 'lat': 15.1194, 'lon': 108.7922},
+            # {'name': 'Tuy Hoa', 'alt_names': ['Tuy Hòa'], 'province': 'Phu Yen', 'lat': 13.0833, 'lon': 109.3000},
             
-            # Thêm các tỉnh miền Nam
-            {'name': 'Cao Lanh', 'alt_names': ['Cao Lãnh'], 'province': 'Dong Thap', 'lat': 10.4592, 'lon': 105.6325},
-            {'name': 'Sa Dec', 'alt_names': ['Sa Đéc'], 'province': 'Dong Thap', 'lat': 10.2922, 'lon': 105.7592},
-            {'name': 'Vinh Long', 'alt_names': ['Vĩnh Long'], 'province': 'Vinh Long', 'lat': 10.2397, 'lon': 105.9722},
-            {'name': 'Tra Vinh', 'alt_names': ['Trà Vinh'], 'province': 'Tra Vinh', 'lat': 9.9514, 'lon': 106.3431},
-            {'name': 'Soc Trang', 'alt_names': ['Sóc Trăng'], 'province': 'Soc Trang', 'lat': 9.6025, 'lon': 105.9803},
-            {'name': 'Bac Lieu', 'alt_names': ['Bạc Liêu'], 'province': 'Bac Lieu', 'lat': 9.2847, 'lon': 105.7244},
-            {'name': 'Ca Mau', 'alt_names': ['Cà Mau'], 'province': 'Ca Mau', 'lat': 9.1767, 'lon': 105.1525},
-            {'name': 'Chau Doc', 'alt_names': ['Châu Đốc'], 'province': 'An Giang', 'lat': 10.7011, 'lon': 105.1119},
-            {'name': 'Ha Tien', 'alt_names': ['Hà Tiên'], 'province': 'Kien Giang', 'lat': 10.3831, 'lon': 104.4881},
-            {'name': 'Phu Quoc', 'alt_names': ['Phú Quốc'], 'province': 'Kien Giang', 'lat': 10.2897, 'lon': 103.9840},
+            # # Thêm các tỉnh miền Nam
+            # {'name': 'Cao Lanh', 'alt_names': ['Cao Lãnh'], 'province': 'Dong Thap', 'lat': 10.4592, 'lon': 105.6325},
+            # {'name': 'Sa Dec', 'alt_names': ['Sa Đéc'], 'province': 'Dong Thap', 'lat': 10.2922, 'lon': 105.7592},
+            # {'name': 'Vinh Long', 'alt_names': ['Vĩnh Long'], 'province': 'Vinh Long', 'lat': 10.2397, 'lon': 105.9722},
+            # {'name': 'Tra Vinh', 'alt_names': ['Trà Vinh'], 'province': 'Tra Vinh', 'lat': 9.9514, 'lon': 106.3431},
+            # {'name': 'Soc Trang', 'alt_names': ['Sóc Trăng'], 'province': 'Soc Trang', 'lat': 9.6025, 'lon': 105.9803},
+            # {'name': 'Bac Lieu', 'alt_names': ['Bạc Liêu'], 'province': 'Bac Lieu', 'lat': 9.2847, 'lon': 105.7244},
+            # {'name': 'Ca Mau', 'alt_names': ['Cà Mau'], 'province': 'Ca Mau', 'lat': 9.1767, 'lon': 105.1525},
+            # {'name': 'Chau Doc', 'alt_names': ['Châu Đốc'], 'province': 'An Giang', 'lat': 10.7011, 'lon': 105.1119},
+            # {'name': 'Ha Tien', 'alt_names': ['Hà Tiên'], 'province': 'Kien Giang', 'lat': 10.3831, 'lon': 104.4881},
+            # {'name': 'Phu Quoc', 'alt_names': ['Phú Quốc'], 'province': 'Kien Giang', 'lat': 10.2897, 'lon': 103.9840},
             
-            # Thêm các thành phố công nghiệp
-            {'name': 'Di An', 'alt_names': ['Dĩ An'], 'province': 'Binh Duong', 'lat': 10.9069, 'lon': 106.7722},
-            {'name': 'Tan An', 'alt_names': ['Tân An'], 'province': 'Long An', 'lat': 10.5439, 'lon': 106.4108},
-            {'name': 'Ben Tre', 'alt_names': ['Bến Tre'], 'province': 'Ben Tre', 'lat': 10.2431, 'lon': 106.3756},
-            {'name': 'Tay Ninh', 'alt_names': ['Tây Ninh'], 'province': 'Tay Ninh', 'lat': 11.3100, 'lon': 106.0983}
+            # # Thêm các thành phố công nghiệp
+            # {'name': 'Di An', 'alt_names': ['Dĩ An'], 'province': 'Binh Duong', 'lat': 10.9069, 'lon': 106.7722},
+            # {'name': 'Tan An', 'alt_names': ['Tân An'], 'province': 'Long An', 'lat': 10.5439, 'lon': 106.4108},
+            # {'name': 'Ben Tre', 'alt_names': ['Bến Tre'], 'province': 'Ben Tre', 'lat': 10.2431, 'lon': 106.3756},
+            # {'name': 'Tay Ninh', 'alt_names': ['Tây Ninh'], 'province': 'Tay Ninh', 'lat': 11.3100, 'lon': 106.0983}
         ]
 
     def extract_number(self, text: str) -> Optional[float]:
@@ -518,63 +547,55 @@ class AirQualityCrawler:
         return merged
 
     def save_to_csv(self, data: List[Dict], filename: str = None) -> str:
-        """Lưu dữ liệu vào CSV trong folder data với tối ưu hóa"""
         if not data:
             logger.warning("No data to save")
             return None
         
-        # Tạo folder data nếu chưa tồn tại
-        current_dir = Path(__file__).parent  # thư mục hiện tại (Source)
-        data_folder = current_dir / 'data'  # thư mục Source/data
+        # Sử dụng thư mục /app/data nếu tồn tại (khi chạy Docker), ngược lại dùng thư mục hiện tại
+        docker_data_dir = Path("/app/data")
+        if docker_data_dir.exists():
+            data_folder = docker_data_dir
+        else:
+            current_dir = Path(__file__).parent
+            data_folder = current_dir / 'data'
         data_folder.mkdir(exist_ok=True)
         
-        # Tạo subfolder theo ngày để lưu trữ có tổ chức
         current_date = datetime.now()
-        date_folder = data_folder / current_date.strftime('%Y-%m')
+        date_folder = data_folder / 'data_export'
         date_folder.mkdir(exist_ok=True)
         
         if filename is None:
             filename = f"air_quality_vietnam_{current_date.strftime('%Y%m%d_%H%M%S')}.csv"
         
-        # Đường dẫn đầy đủ cho file
         file_path = date_folder / filename
         
         try:
             df = pd.DataFrame(data)
-            
-            # Sắp xếp dữ liệu
             df = df.sort_values(['timestamp', 'city'], ascending=[False, True])
             
-            # Chuyển đổi các cột numeric
             numeric_columns = ['aqi', 'aqi_cn', 'pm25', 'pm10', 'o3', 'no2', 'so2', 'co', 'nh3',
                             'temperature', 'humidity', 'pressure', 'wind_speed', 'wind_direction', 
                             'visibility', 'uv_index', 'latitude', 'longitude']
-            
             for col in numeric_columns:
                 if col in df.columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
             
-            # Loại bỏ cột raw_data
+            # Loại bỏ cột raw_data trước khi lưu
             if 'raw_data' in df.columns:
                 df = df.drop('raw_data', axis=1)
             
-            # Sắp xếp lại các cột
             column_order = ['timestamp', 'city', 'province', 'city_source', 'latitude', 'longitude', 
                         'aqi', 'aqi_cn', 'pm25', 'pm10', 'o3', 'no2', 'so2', 'co', 'nh3',
                         'temperature', 'humidity', 'pressure', 'wind_speed', 'wind_direction',
                         'visibility', 'uv_index', 'weather_condition', 'source', 'status']
-            
             existing_columns = [col for col in column_order if col in df.columns]
             remaining_columns = [col for col in df.columns if col not in existing_columns]
             final_columns = existing_columns + remaining_columns
-            
             df = df[final_columns]
             
-            # Lưu file
             df.to_csv(file_path, index=False, encoding='utf-8-sig')
             logger.info(f"Data exported to {file_path} ({len(df)} records)")
             
-            # In thống kê
             logger.info(f"Data summary:")
             logger.info(f"  Total records: {len(df)}")
             if 'source' in df.columns:
@@ -583,20 +604,19 @@ class AirQualityCrawler:
                     logger.info(f"  {source}: {count} records")
             
             return str(file_path)
-            
         except Exception as e:
             logger.error(f"Error saving to CSV: {str(e)}")
             return None
 
     def run_optimized_crawl(self, iqair_api_key: str = None, openweather_api_key: str = None, waqi_token: str = 'demo'):
-        """Chạy crawl tối ưu với xử lý lỗi tốt hơn"""
+        """Chạy crawl tối ưu với xử lý lỗi tốt hơn và trả về cả đường dẫn file lẫn nội dung CSV"""
         logger.info("="*60)
         logger.info("STARTING ENHANCED AIR QUALITY CRAWL")
         logger.info("="*60)
         
         if not self.check_connectivity():
             logger.error("Crawl aborted due to network issues")
-            return None
+            return {"success": False, "error": "Network connectivity issue"}
         
         # Chuẩn bị danh sách các task crawling
         crawl_tasks = []
@@ -618,51 +638,61 @@ class AirQualityCrawler:
         
         if not crawl_tasks:
             logger.error("No valid API keys provided, cannot crawl any data")
-            return None
+            return {"success": False, "error": "No valid API keys provided"}
         
         all_results = []
         
-        # Chạy từng task crawling
+        # Chạy từng task crawling với retry logic
         for source_name, crawl_func, args in crawl_tasks:
             logger.info(f"Starting {source_name} crawling...")
             start_time = time.time()
             
-            try:
-                results = crawl_func(*args)
-                elapsed_time = time.time() - start_time
-                
-                if results:
-                    all_results.extend(results)
-                    logger.info(f"✓ {source_name}: {len(results)} records in {elapsed_time:.1f}s")
-                else:
-                    logger.warning(f"✗ {source_name}: No data retrieved in {elapsed_time:.1f}s")
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    results = crawl_func(*args)
+                    elapsed_time = time.time() - start_time
                     
-            except Exception as e:
-                elapsed_time = time.time() - start_time
-                logger.error(f"✗ {source_name} failed in {elapsed_time:.1f}s: {str(e)}")
+                    if results:
+                        all_results.extend(results)
+                        logger.info(f"✓ {source_name}: {len(results)} records in {elapsed_time:.1f}s")
+                        break
+                    else:
+                        logger.warning(f"✗ {source_name}: No data retrieved in {elapsed_time:.1f}s")
+                        if attempt < max_retries - 1:
+                            time.sleep(2 ** attempt)  # Exponential backoff
+                        else:
+                            logger.error(f"✗ {source_name}: Failed after {max_retries} attempts")
+                except Exception as e:
+                    elapsed_time = time.time() - start_time
+                    logger.error(f"✗ {source_name} failed in {elapsed_time:.1f}s: {str(e)}")
+                    if attempt < max_retries - 1:
+                        time.sleep(2 ** attempt)
+                    else:
+                        logger.error(f"✗ {source_name}: Failed after {max_retries} attempts: {str(e)}")
             
-            # Thêm delay giữa các nguồn để tránh overload
-            if source_name != crawl_tasks[-1][0]:  # Không delay sau task cuối
+            # Delay giữa các nguồn
+            if source_name != crawl_tasks[-1][0]:
                 time.sleep(3)
         
         # Xử lý kết quả
         if all_results:
             all_results = self.merge_data(all_results)
             csv_file = self.save_to_csv(all_results)
+            if not csv_file:
+                logger.error("Failed to save CSV file")
+                return {"success": False, "error": "Failed to save CSV file"}
             
-            # Thống kê chi tiết
-            sources = {}
-            cities_crawled = set()
-            for record in all_results:
-                source = record.get('source', 'unknown')
-                sources[source] = sources.get(source, 0) + 1
-                cities_crawled.add(record.get('city', 'unknown'))
+            df = pd.DataFrame(all_results)
+            csv_content = df.to_csv(index=False, encoding='utf-8-sig')
+            cities_covered = len(df['city'].unique())
+            sources = df['source'].value_counts().to_dict()
             
             logger.info("="*60)
             logger.info("CRAWL COMPLETED SUCCESSFULLY")
             logger.info("="*60)
             logger.info(f"Total records: {len(all_results)}")
-            logger.info(f"Cities covered: {len(cities_crawled)}")
+            logger.info(f"Cities covered: {cities_covered}")
             logger.info(f"CSV file: {csv_file}")
             logger.info("Sources breakdown:")
             for source, count in sources.items():
@@ -670,8 +700,9 @@ class AirQualityCrawler:
             
             return {
                 'csv_file': csv_file,
+                'csv_content': csv_content,
                 'total_records': len(all_results),
-                'cities_covered': len(cities_crawled),
+                'cities_covered': cities_covered,
                 'sources': sources,
                 'success': True
             }
@@ -688,8 +719,7 @@ class AirQualityCrawler:
                 'success': False,
                 'error': 'No data was successfully crawled from any source'
             }
-        
-ENABLE_SCHEDULING = False 
+ENABLE_SCHEDULING = True 
 def main():
     """Hàm main với schedule và xử lý lỗi"""
     def job():
@@ -770,11 +800,7 @@ def simple_run():
     logger.info(f"  OpenWeatherMap API: {'✓ Available' if openweather_api_key else '✗ Not provided'}")
     logger.info(f"  WAQI Token: {'✓ Custom token' if waqi_token != 'demo' else '✗ Using demo token'}")
     
-    crawler.run_optimized_crawl(iqair_api_key, openweather_api_key, waqi_token)
+    return crawler.run_optimized_crawl(iqair_api_key, openweather_api_key, waqi_token)
     
-
 if __name__ == "__main__":
-    if ENABLE_SCHEDULING:
-        main()
-    else:
-        simple_run()
+    result = simple_run()
