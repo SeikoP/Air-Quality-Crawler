@@ -15,13 +15,6 @@ Hệ thống này thực hiện thu thập dữ liệu chất lượng không kh
 └── README.md             # Tài liệu này
 ```
 
-## ⚠️ Lưu ý bảo mật khi public lên GitHub
-
-- **KHÔNG commit file `.env` thật, file chứa API key, mật khẩu, token, hoặc file dữ liệu cá nhân.**
-- **KHÔNG commit file `credentials_oauth.json`, `token_drive.pkl`, hoặc bất kỳ file nào chứa thông tin xác thực.**
-- **Chỉ commit file `.env.example` với các biến môi trường mẫu, không có giá trị thực.**
-- **Kiểm tra `.gitignore` đã loại trừ các file/thư mục nhạy cảm.**
-
 ## ⚙️ Các chức năng chính
 
 ### 1. **Thu thập dữ liệu - `data_crawler.py`**
@@ -188,9 +181,3 @@ uvicorn api:app --reload --port 8000
 
 Nguyễn Hữu Cường  
 Dự án tốt nghiệp - Phân tích dữ liệu 2025
-
----
-
-**Lưu ý:**  
-- Khi public lên GitHub, hãy kiểm tra lại toàn bộ repo để đảm bảo không lộ thông tin nhạy cảm.
-- Nếu lỡ commit thông tin nhạy cảm, hãy xóa commit đó và đổi lại các API key/mật khẩu liên quan.
