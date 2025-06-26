@@ -181,9 +181,3 @@ uvicorn api:app --reload --port 8000
 
 Nguyễn Hữu Cường  
 Dự án tốt nghiệp - Phân tích dữ liệu 2025
-
----
-
-**Lưu ý:**  
-- Khi public lên GitHub, hãy kiểm tra lại toàn bộ repo để đảm bảo không lộ thông tin nhạy cảm.
-- Nếu lỡ commit thông tin nhạy cảm, hãy xóa commit đó và đổi lại các API key/mật khẩu liên quan.
