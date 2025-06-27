@@ -89,6 +89,30 @@ async def main(request: Request):
 
     # Đẩy dữ liệu vào PostgreSQL bằng Python, đúng thứ tự khóa ngoại
     try:
+        # Thêm logger.info để xác nhận số lượng bản ghi trước khi insert
+        logger.info(f"City records: {len(mapping['City'])}")
+        logger.info(f"Source records: {len(mapping['Source'])}")
+        logger.info(f"WeatherCondition records: {len(mapping['WeatherCondition'])}")
+        logger.info(f"AirQualityRecord records: {len(mapping['AirQualityRecord'])}")
+
+        # Kiểm tra engine và DATABASE_URL
+        logger.info(f"DATABASE_URL: {DATABASE_URL}")
+        logger.info(f"Engine: {engine}")
+
+        # Kiểm tra kết nối DB trước khi insert
+        try:
+            with engine.connect() as conn:
+                # Sửa lại: dùng text() để thực thi SQL thuần với SQLAlchemy
+                from sqlalchemy import text
+                conn.execute(text("SELECT 1"))
+            logger.info("Database connection test: SUCCESS")
+        except Exception as db_test_err:
+            logger.error(f"Database connection test: FAILED - {db_test_err}")
+            return {
+                "status": "error",
+                "message": f"Database connection failed: {db_test_err}"
+            }
+
         save_to_postgres(mapping['City'], 'City', engine, if_exists='append')
         save_to_postgres(mapping['Source'], 'Source', engine, if_exists='append')
         save_to_postgres(mapping['WeatherCondition'], 'WeatherCondition', engine, if_exists='append')
