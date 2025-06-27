@@ -141,6 +141,7 @@ uvicorn api:app --reload --port 8000
   volumes:
     pgdata:
   ```
+  
 
 ### 2. Tích hợp với n8n
 

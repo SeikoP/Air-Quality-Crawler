@@ -15,33 +15,47 @@ import sys
 import schedule
 from pathlib import Path
 from fastapi import FastAPI, Request
+import pytz
 
 app = FastAPI()
+
+def get_vietnam_time_str(fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
+    """Trả về thời gian hiện tại ở Việt Nam dưới dạng chuỗi."""
+    vietnam_tz = pytz.timezone("Asia/Ho_Chi_Minh")
+    return datetime.now(vietnam_tz).strftime(fmt)
 
 @app.post("/run_optimized_crawl")
 async def run_crawl(request: Request):
     """
     Cho phép truyền API key động qua body JSON (ưu tiên), hoặc lấy từ biến môi trường.
+    Nếu body không phải JSON hợp lệ, sẽ bỏ qua và chỉ lấy từ biến môi trường.
     """
-    body = await request.json()
-    iqair_api_key = body.get("iqair_api_key") if isinstance(body, dict) else None
+    try:
+        if request.headers.get("content-type", "").startswith("application/json"):
+            body = await request.json()
+        else:
+            body = {}
+    except Exception:
+        body = {}
+
+    iqair_api_key = None
     openweather_api_key = body.get("openweather_api_key") if isinstance(body, dict) else None
     waqi_token = body.get("waqi_token") if isinstance(body, dict) else None
 
     # Nếu không truyền qua body thì lấy từ biến môi trường
-    if not iqair_api_key:
-        iqair_api_key = os.getenv('IQAIR_API_KEY')
     if not openweather_api_key:
         openweather_api_key = os.getenv('OPENWEATHER_API_KEY')
     if not waqi_token:
         waqi_token = os.getenv('WAQI_TOKEN', 'demo')
 
     crawler = AirQualityCrawler()
-    return crawler.run_optimized_crawl(
+    result = crawler.run_optimized_crawl(
         iqair_api_key,
         openweather_api_key,
         waqi_token
     )
+    # Đảm bảo trả về JSON hợp lệ cho n8n
+    return result
 
 
 # Cấu hình logging với encoding UTF-8
@@ -226,7 +240,7 @@ class AirQualityCrawler:
                                     pollution = current.get('pollution', {})
                                     weather = current.get('weather', {})
                                     record = {
-                                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                        'timestamp': get_vietnam_time_str(),
                                         'city': city['name'],
                                         'province': city['province'],
                                         'latitude': city['lat'],
@@ -313,7 +327,7 @@ class AirQualityCrawler:
                                     if aqi and aqi != '-':
                                         iaqi = data_json['data'].get('iaqi', {})
                                         record = {
-                                            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                            'timestamp': get_vietnam_time_str(),
                                             'city': city['name'],
                                             'province': city['province'],
                                             'latitude': city['lat'],
@@ -378,7 +392,7 @@ class AirQualityCrawler:
                                             pollutants[pollutant] = self.extract_number(elem.text)
                                     
                                     record = {
-                                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                        'timestamp': get_vietnam_time_str(),
                                         'city': city['name'],
                                         'province': city['province'],
                                         'latitude': city['lat'],
@@ -455,7 +469,7 @@ class AirQualityCrawler:
                 }
                 
                 record = {
-                    'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'timestamp': get_vietnam_time_str(),
                     'city': city['name'],
                     'province': city['province'],
                     'latitude': city['lat'],

@@ -72,6 +72,7 @@ services:
     restart: unless-stopped
     networks:
       - air_quality_network
+    command: ["uvicorn", "api.api:app", "--host", "0.0.0.0", "--port", "8000"]
 
   n8n:
     image: n8nio/n8n
@@ -86,7 +87,7 @@ services:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_USER_MANAGEMENT_DISABLED=false
     volumes:
-      - n8n_data:/home/node/.n8n
+      - ./n8n_data:/home/node/.n8n
     depends_on:
       postgres:
         condition: service_healthy
@@ -99,8 +100,6 @@ services:
 volumes:
   postgres_data:
     name: air_quality_postgres_data
-  n8n_data:
-    name: air_quality_n8n_data
 
 networks:
   air_quality_network:

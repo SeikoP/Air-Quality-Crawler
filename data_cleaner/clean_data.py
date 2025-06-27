@@ -11,7 +11,7 @@ import pickle
 # from googleapiclient.errors import HttpError
 from sqlalchemy import create_engine
 import dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from time import sleep
 from typing import Dict, List
 import os
@@ -33,9 +33,19 @@ dotenv.load_dotenv()
 
 app = FastAPI()
 
-
 @app.post("/main")
-async def main(data: dict):
+async def main(request: Request):
+    """
+    Nhận body JSON hợp lệ từ n8n hoặc client khác, trả về lỗi nếu không phải JSON.
+    """
+    try:
+        if request.headers.get("content-type", "").startswith("application/json"):
+            data = await request.json()
+        else:
+            data = {}
+    except Exception:
+        data = {}
+
     csv_file = data.get("csv_file")
     csv_content = data.get("csv_content")
     
@@ -76,11 +86,24 @@ async def main(data: dict):
         table_path = TRANFORM_DIR / f"{table_name}.csv"
         table_data.to_csv(table_path, index=False, encoding='utf-8-sig')
         logger.info(f"Saved {table_name} to {table_path}")
-        save_to_postgres(table_data, table_name, engine, if_exists='replace')
-    
+
+    # Đẩy dữ liệu vào PostgreSQL bằng Python, đúng thứ tự khóa ngoại
+    try:
+        save_to_postgres(mapping['City'], 'City', engine, if_exists='append')
+        save_to_postgres(mapping['Source'], 'Source', engine, if_exists='append')
+        save_to_postgres(mapping['WeatherCondition'], 'WeatherCondition', engine, if_exists='append')
+        save_to_postgres(mapping['AirQualityRecord'], 'AirQualityRecord', engine, if_exists='append')
+        logger.info("Inserted all tables to PostgreSQL successfully")
+    except Exception as e:
+        logger.error(f"Error inserting to PostgreSQL: {e}")
+        return {
+            "status": "error",
+            "message": f"Error inserting to PostgreSQL: {e}"
+        }
+
     return {
         "status": "success",
-        "message": f"Processed {len(df)} records",
+        "message": f"Processed {len(df)} records and inserted to PostgreSQL",
         "cleaned_file": str(cleaned_file)
     }
 
@@ -164,7 +187,13 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
             df[col] = df[col].clip(lower=0, upper=df[col].quantile(0.999)).round(2)
 
         # Process timestamp
-        df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce').fillna(method='ffill')
+        import pytz
+        # Nếu dữ liệu đầu vào là giờ UTC, hãy dùng dòng sau:
+        # df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce', utc=True).dt.tz_convert('Asia/Ho_Chi_Minh')
+        # Nếu dữ liệu đầu vào đã là giờ Việt Nam (không có tz), hãy dùng dòng sau:
+        df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+        df['timestamp'] = df['timestamp'].dt.tz_localize('Asia/Ho_Chi_Minh', ambiguous='NaT', nonexistent='NaT')
+        df['timestamp'] = df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
 
         # Normalize weather condition
         weather_mapping = {
@@ -283,7 +312,10 @@ def save_to_csv(df: pd.DataFrame, mapping: Dict[str, pd.DataFrame]):
 def save_to_postgres(df: pd.DataFrame, table_name: str, engine, if_exists: str = 'append', chunksize: int = 1000):
     """Save DataFrame to PostgreSQL table."""
     try:
-        df.to_sql(table_name, engine, if_exists=if_exists, index=False, chunksize=chunksize)
+        # Đảm bảo timestamp là kiểu datetime khi lưu vào DB
+        if 'timestamp' in df.columns:
+            df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+        df.to_sql(table_name, engine, if_exists=if_exists, index=False, chunksize=chunksize, method='multi')
         logger.info(f"Saved {len(df)} records to PostgreSQL table {table_name}")
     except Exception as e:
         logger.error(f"Error saving to PostgreSQL table {table_name}: {e}")
@@ -427,8 +459,9 @@ def main():
         df = clean_data(df)
         mapping = transform_data(df)
         save_to_csv(df, mapping)
-        for table_name, table_data in mapping.items():
-            save_to_postgres(table_data, table_name, engine, if_exists='replace')
+        # for table in ['City', 'Source', 'WeatherCondition', 'AirQualityRecord']:
+        #     if table in mapping:
+        #         save_to_postgres(mapping[table], table, engine, if_exists='replace')  # Bỏ import vào DB
         # upload_to_google_drive(df, mapping)
         logger.info("Data processing pipeline completed successfully")
     except Exception as e:
